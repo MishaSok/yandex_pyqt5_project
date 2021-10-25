@@ -34,11 +34,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QTextEdit" name="login_form">
-         <property name="tabStopDistance">
-          <double>88.000000000000000</double>
-         </property>
-        </widget>
+        <widget class="QLineEdit" name="lineEdit"/>
        </item>
       </layout>
      </item>
@@ -52,11 +48,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QTextEdit" name="pass_form">
-         <property name="tabStopDistance">
-          <double>88.000000000000000</double>
-         </property>
-        </widget>
+        <widget class="QLineEdit" name="lineEdit_2"/>
        </item>
       </layout>
      </item>
