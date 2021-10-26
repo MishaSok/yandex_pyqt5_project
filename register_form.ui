@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>303</width>
-    <height>348</height>
+    <width>548</width>
+    <height>509</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Регистрация</string>
   </property>
   <widget class="QWidget" name="verticalLayoutWidget">
    <property name="geometry">
@@ -93,12 +93,37 @@
       </item>
      </layout>
     </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_6">
+      <item>
+       <widget class="QLabel" name="label_6">
+        <property name="text">
+         <string>Регистрация для :</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="comboBox">
+        <item>
+         <property name="text">
+          <string>Ученик</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Преподаватель</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
+    </item>
    </layout>
   </widget>
-  <widget class="QPushButton" name="pushButton">
+  <widget class="QPushButton" name="register_button">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>30</x>
      <y>260</y>
      <width>141</width>
      <height>28</height>
@@ -108,7 +133,7 @@
     <string>Зарегестрироваться</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton_2">
+  <widget class="QPushButton" name="cancel_button">
    <property name="geometry">
     <rect>
      <x>190</x>
