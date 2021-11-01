@@ -34,7 +34,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="lineEdit"/>
+        <widget class="QLineEdit" name="login_line"/>
        </item>
       </layout>
      </item>
@@ -48,7 +48,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="lineEdit_2"/>
+        <widget class="QLineEdit" name="password_line"/>
        </item>
       </layout>
      </item>
@@ -101,6 +101,19 @@
      <string>Яндекс.Учеба</string>
     </property>
    </widget>
+   <widget class="QLabel" name="error_label">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>210</y>
+      <width>251</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -108,7 +121,7 @@
      <x>0</x>
      <y>0</y>
      <width>458</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>

@@ -123,8 +123,8 @@
   <widget class="QPushButton" name="register_button">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>260</y>
+     <x>20</x>
+     <y>250</y>
      <width>141</width>
      <height>28</height>
     </rect>
@@ -137,13 +137,26 @@
    <property name="geometry">
     <rect>
      <x>190</x>
-     <y>260</y>
+     <y>250</y>
      <width>93</width>
      <height>28</height>
     </rect>
    </property>
    <property name="text">
     <string>Отмена</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="req_btn">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>290</y>
+     <width>261</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Требования к созданию аккаунта</string>
    </property>
   </widget>
  </widget>
