@@ -12,6 +12,7 @@ cursor = data_base.cursor()
 class LoginForm(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.teacher_class = TeacherForm()
         self.register_form = RegisterForm()
         self.register_btn = QPushButton()
         self.join_btn = QPushButton()
@@ -40,13 +41,17 @@ class LoginForm(QMainWindow):
             if password == '':
                 self.error_label.setText('Введите пароль')
             else:
-                cursor.execute('SELECT password FROM users WHERE login=?', (login, ))
+                cursor.execute('SELECT password FROM users WHERE login=?', (login,))
                 if cursor.fetchone() is None:
                     self.error_label.setText('Такого логина не существует')
                 else:
-                    for row in cursor.execute('SELECT password FROM users WHERE login=?', (login, )):
+                    for row in cursor.execute('SELECT password, role FROM users WHERE login=?', (login,)):
                         if row[0] == password:
-                            self.error_label.setText('Успешная авторизация!')
+                            if row[1] == 'Преподаватель':
+                                self.teacher_class.add_login(login)
+                                self.teacher_class.show()
+                            else:
+                                pass
                         else:
                             self.error_label.setText('Неверный пароль. Попробуйте снова')
 
@@ -82,7 +87,7 @@ class RegisterForm(QDialog):
             cursor.execute(
                 f"INSERT INTO users VALUES ('{name}', '{surname}', '{login}', '{password}', '{email}', '{role}')")
             data_base.commit()
-            print('Успешная регистрация')
+            self.close()
         else:
             self.reqregform.show()
             print('Ошибка регистрации:', errors)
@@ -107,6 +112,31 @@ class ReqRegForm(QDialog):
 
     def on_ok_btn(self):
         self.close()
+
+
+class TeacherForm(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.login_label = QLabel()
+        self.action = QAction()
+        self.label_2 = QLabel()
+        self.label_3 = QLabel()
+        self.initUI()
+        uic.loadUi('teacher_form.ui', self)
+        self.label = QLabel()
+        # написать методы для класса QAction()
+
+    def initUI(self):
+        self.setGeometry(300, 400, 500, 500)
+        self.setFixedSize(600, 500)
+
+    def add_login(self, login):
+        for row in cursor.execute('SELECT name, surname, password, email, role FROM users where login=?', (login,)):
+            self.name, self.surname, self.login, self.password, \
+            self.email, self.role = row[0], row[1], login, row[2], row[3], row[4]
+        self.login_label.setText(self.login)
+        self.label_2.setText(f'{self.name} {self.surname}')
+        self.label_3.setText(f'{self.role}')
 
 
 if __name__ == '__main__':
