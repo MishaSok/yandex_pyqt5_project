@@ -1,3 +1,6 @@
+import sqlite3
+
+
 def registration_rules(name, surname, login, password, email):
     result = ''
     if str(name).strip() == '' or len(name) <= 1:
@@ -11,3 +14,8 @@ def registration_rules(name, surname, login, password, email):
     if '@' not in email:
         result += 'Неверный формат электронной почты'
     return result
+
+
+def get_teacher_stats(cursor, login):
+    for row in cursor.execute('SELECT ppl_studying, tasks_completed, tasks_created FROM teacher_stats WHERE login=?', (login, )):
+        return [row[0], row[1], row[2]]

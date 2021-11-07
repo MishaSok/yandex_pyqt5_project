@@ -84,10 +84,17 @@ class RegisterForm(QDialog):
         role = self.comboBox.currentText()
         errors = registration_rules(name, surname, login, password, email)
         if errors == '':
-            cursor.execute(
-                f"INSERT INTO users VALUES ('{name}', '{surname}', '{login}', '{password}', '{email}', '{role}')")
-            data_base.commit()
-            self.close()
+            cursor.execute(f'SELECT login from users where login="{login}"')
+            if cursor.fetchone() is None:
+                cursor.execute(
+                    f"INSERT INTO users VALUES ('{name}', '{surname}', '{login}', '{password}', '{email}', '{role}', 0)")
+                data_base.commit()
+                if role == "Преподаватель":
+                    cursor.execute(f"INSERT INTO teacher_stats VALUES ('{login}', 0, 0, 0)")
+                    data_base.commit()
+                self.close()
+            else:
+                print('Такой логин уже существует')
         else:
             self.reqregform.show()
             print('Ошибка регистрации:', errors)
@@ -117,14 +124,18 @@ class ReqRegForm(QDialog):
 class TeacherForm(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.add_student_form = AddStudentForm()
+        self.add_student_btn = QPushButton()
         self.login_label = QLabel()
-        self.action = QAction()
         self.label_2 = QLabel()
         self.label_3 = QLabel()
+        self.label_5 = QLabel()
+        self.label_6 = QLabel()
+        self.label_7 = QLabel()
         self.initUI()
         uic.loadUi('teacher_form.ui', self)
         self.label = QLabel()
-        # написать методы для класса QAction()
+        self.add_student_btn.clicked.connect(self.on_add_student_btn)
 
     def initUI(self):
         self.setGeometry(300, 400, 500, 500)
@@ -137,6 +148,65 @@ class TeacherForm(QMainWindow):
         self.login_label.setText(self.login)
         self.label_2.setText(f'{self.name} {self.surname}')
         self.label_3.setText(f'{self.role}')
+        self.update_teacher_stats()
+
+    def update_teacher_stats(self):
+        A = get_teacher_stats(cursor, self.login)
+        self.label_5.setText(f'Учеников учится: {A[0]}')
+        self.label_6.setText(f'Заданий выполнено: {A[1]}')
+        self.label_7.setText(f'Заданий задано: {A[2]}')
+
+    def on_add_student_btn(self):
+        self.add_student_form.initialization(self.login)
+        self.add_student_form.show()
+
+
+class AddStudentForm(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.label = QLabel()
+        self.listWidget = QListWidget()
+        self.add_btn = QPushButton()
+        self.close_btn = QPushButton()
+        uic.loadUi('add_student_form.ui', self)
+        self.initUI()
+        self.close_btn.clicked.connect(self.on_close_btn)
+        self.add_btn.clicked.connect(self.on_add_btn)
+
+    def initUI(self):
+        self.setGeometry(300, 300, 300, 300)
+        self.setFixedSize(340, 300)
+
+    def initialization(self, login):
+        print('test')
+        self.login = login
+        for row in cursor.execute("SELECT name, surname, login FROM users WHERE role='Ученик' AND have_teacher=0"):
+            self.listWidget.addItem(f"{row[0]} {row[1]} ({row[2]})")
+            print(row)
+
+    def on_close_btn(self):
+        self.listWidget.clear()
+        self.close()
+
+    def on_add_btn(self):
+        try:
+            self.student = self.listWidget.currentItem().text()
+            res = str(self.student).split()[2].replace(')', '').replace('(', '')
+            cursor.execute(f'''CREATE TABLE IF NOT EXISTS teacher_{self.login}(
+            student_login TEXT,
+            student_name TEXT,
+            student_surname TEXT);
+            ''')
+            data_base.commit()
+            cursor.execute(f"INSERT INTO teacher_{self.login} VALUES ('{res}', '{str(self.student).split()[0]}', "
+                           f"'{str(self.student).split()[1]}')")
+            data_base.commit()
+            cursor.execute(f"UPDATE users SET have_teacher=1 WHERE login='{res}'")
+            data_base.commit()
+            self.listWidget.clear()
+            self.initialization(self.login)
+        except Exception as Error:
+            print(Error)
 
 
 if __name__ == '__main__':
