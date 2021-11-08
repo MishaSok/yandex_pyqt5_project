@@ -3,6 +3,7 @@ from PyQt5 import uic
 from PyQt5.QtWidgets import *
 import sqlite3
 from reg_func import *
+import time
 
 # Подключение к базе данных
 data_base = sqlite3.connect('data_base.db', timeout=10)
@@ -50,6 +51,7 @@ class LoginForm(QMainWindow):
                             if row[1] == 'Преподаватель':
                                 self.teacher_class.add_login(login)
                                 self.teacher_class.show()
+                                self.close()
                             else:
                                 pass
                         else:
@@ -126,16 +128,22 @@ class TeacherForm(QMainWindow):
         super().__init__()
         self.add_student_form = AddStudentForm()
         self.add_student_btn = QPushButton()
+        self.create_task_form = CreateTaskForm()
+        self.kick_student_btn = QPushButton()
+        self.create_kick_form = KickStudentForm()
         self.login_label = QLabel()
         self.label_2 = QLabel()
         self.label_3 = QLabel()
         self.label_5 = QLabel()
         self.label_6 = QLabel()
         self.label_7 = QLabel()
+        self.create_task_btn = QPushButton()
         self.initUI()
         uic.loadUi('teacher_form.ui', self)
         self.label = QLabel()
         self.add_student_btn.clicked.connect(self.on_add_student_btn)
+        self.create_task_btn.clicked.connect(self.on_create_task_btn)
+        self.kick_student_btn.clicked.connect(self.on_kick_student_btn)
 
     def initUI(self):
         self.setGeometry(300, 400, 500, 500)
@@ -157,8 +165,19 @@ class TeacherForm(QMainWindow):
         self.label_7.setText(f'Заданий задано: {A[2]}')
 
     def on_add_student_btn(self):
+        self.update_teacher_stats()
         self.add_student_form.initialization(self.login)
         self.add_student_form.show()
+
+    def on_create_task_btn(self):
+        self.update_teacher_stats()
+        self.create_task_form.show()
+        self.create_task_form.initialization(self.login)
+
+    def on_kick_student_btn(self):
+        self.update_teacher_stats()
+        self.create_kick_form.show()
+        self.create_kick_form.initialization(self.login)
 
 
 class AddStudentForm(QWidget):
@@ -178,7 +197,6 @@ class AddStudentForm(QWidget):
         self.setFixedSize(340, 300)
 
     def initialization(self, login):
-        print('test')
         self.login = login
         for row in cursor.execute("SELECT name, surname, login FROM users WHERE role='Ученик' AND have_teacher=0"):
             self.listWidget.addItem(f"{row[0]} {row[1]} ({row[2]})")
@@ -203,11 +221,111 @@ class AddStudentForm(QWidget):
             data_base.commit()
             cursor.execute(f"UPDATE users SET have_teacher=1 WHERE login='{res}'")
             data_base.commit()
+            for row in cursor.execute(f"SELECT ppl_studying FROM teacher_stats WHERE login='{self.login}'"):
+                stat = int(row[0])
+            cursor.execute(f"UPDATE teacher_stats SET ppl_studying={int(stat) + 1} WHERE login='{self.login}'")
+            data_base.commit()
             self.listWidget.clear()
             self.initialization(self.login)
         except Exception as Error:
             print(Error)
 
+
+class CreateTaskForm(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.task_text_edit = QPlainTextEdit()
+        self.delete_file_btn = QPushButton()
+        self.choose_file_btn = QPushButton()
+        self.errors_label = QLabel()
+        self.add_task_btn = QPushButton()
+        self.close_btn = QPushButton()
+        self.comboBox = QComboBox()
+        self.fname = 'fname'
+        self.initUI()
+        uic.loadUi('create_task_form.ui', self)
+        self.choose_file_btn.clicked.connect(self.on_choose_file_btn)
+        self.delete_file_btn.clicked.connect(self.on_delete_file_btn)
+        self.close_btn.clicked.connect(self.on_close_btn)
+        self.add_task_btn.clicked.connect(self.on_create_task_btn)
+
+    def initUI(self):
+        self.setGeometry(300, 400, 500, 500)
+        self.setFixedSize(270, 300)
+
+    def initialization(self, login):
+        self.login = login
+
+    def on_choose_file_btn(self):
+        fname = QFileDialog.getOpenFileName(self, 'Выбрать файл', '')[0]
+        self.fname = fname
+        if str(fname).strip() == '':
+            self.errors_label.setText('Файл не был выбран')
+        else:
+            self.errors_label.setText(f'Выбран файл: {str(fname)}')
+
+    def on_delete_file_btn(self):
+        if self.fname == 'fname':
+            self.errors_label.setText('Файл не был выбран.')
+        else:
+            self.fname = 'fname'
+            self.errors_label.setText('Файл был удален.')
+
+    def on_close_btn(self):
+        self.close()
+
+    def on_create_task_btn(self):
+        try:
+            if self.fname == 'fname':
+                fname = None
+            else:
+                fname = self.fname
+            diff = self.comboBox.currentText()
+            if self.fname == 'fname' and self.task_text_edit.toPlainText() == '':
+                self.errors_label.setText('Задание не может быть пустым.')
+            else:
+                cursor.execute(
+                    f"INSERT INTO tasks VALUES ('{self.login}', '{self.task_text_edit.toPlainText()}', '{fname}', "
+                    f"'{diff}', 0)")
+                data_base.commit()
+                self.task_text_edit.setPlainText('')
+                self.fname = 'fname'
+                self.errors_label.setText('Ошибок не обнаружено.')
+                self.close()
+        except Exception as Error:
+            self.errors_label.setText(f'Ошибка {Error}')
+            print(f'Method error: {Error}')
+
+
+class KickStudentForm(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.label = QLabel()
+        self.close_btn = QPushButton()
+        self.kick_btn = QPushButton()
+        self.listWidget = QListWidget()
+        uic.loadUi('kick_student_form.ui', self)
+        self.initUI()
+        self.close_btn.clicked.connect(self.on_close_btn)
+        self.kick_btn.clicked.connect(self.on_kick_btn)
+    def initUI(self):
+        self.setGeometry(300, 300, 300, 300)
+        self.setFixedSize(340, 300)
+
+    def initialization(self, login):
+        self.login = login
+        for row in cursor.execute(f"SELECT student_login, student_name, student_surname FROM teacher_{self.login}"):
+            self.listWidget.addItem(f"{row[1]} {row[2]} ({row[0]})")
+            print(row)
+
+    def on_close_btn(self):
+        self.close()
+
+    def on_kick_btn(self):
+        self.student = self.listWidget.currentItem().text()
+        res = str(self.student).split()[2].replace(')', '').replace('(', '')
+        print(res)
+        print(self.student)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
