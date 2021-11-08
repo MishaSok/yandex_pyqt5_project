@@ -288,6 +288,10 @@ class CreateTaskForm(QDialog):
                     f"INSERT INTO tasks VALUES ('{self.login}', '{self.task_text_edit.toPlainText()}', '{fname}', "
                     f"'{diff}', 0)")
                 data_base.commit()
+                for row in cursor.execute(f"SELECT tasks_created FROM teacher_stats WHERE login='{self.login}'"):
+                    stat = int(row[0])
+                cursor.execute(f"UPDATE teacher_stats SET tasks_created={stat + 1} WHERE login='{self.login}'")
+                data_base.commit()
                 self.task_text_edit.setPlainText('')
                 self.fname = 'fname'
                 self.errors_label.setText('Ошибок не обнаружено.')
@@ -308,6 +312,7 @@ class KickStudentForm(QWidget):
         self.initUI()
         self.close_btn.clicked.connect(self.on_close_btn)
         self.kick_btn.clicked.connect(self.on_kick_btn)
+
     def initUI(self):
         self.setGeometry(300, 300, 300, 300)
         self.setFixedSize(340, 300)
@@ -319,13 +324,22 @@ class KickStudentForm(QWidget):
             print(row)
 
     def on_close_btn(self):
+        self.listWidget.clear()
         self.close()
 
     def on_kick_btn(self):
         self.student = self.listWidget.currentItem().text()
         res = str(self.student).split()[2].replace(')', '').replace('(', '')
-        print(res)
-        print(self.student)
+        cursor.execute(f"DELETE FROM teacher_{self.login} WHERE student_login='{res}'")
+        for row in cursor.execute(f"SELECT ppl_studying FROM teacher_stats WHERE login='{self.login}'"):
+            stat = int(row[0])
+        cursor.execute(f"UPDATE teacher_stats SET ppl_studying={stat - 1} WHERE login='{self.login}'")
+        data_base.commit()
+        cursor.execute(f"UPDATE users SET have_teacher=0 WHERE login='{res}'")
+        data_base.commit()
+        self.listWidget.clear()
+        self.initialization(self.login)
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
