@@ -14,6 +14,7 @@ class LoginForm(QMainWindow):
     def __init__(self):
         super().__init__()
         self.teacher_class = TeacherForm()
+        self.student_form = StudentForm()
         self.register_form = RegisterForm()
         self.register_btn = QPushButton()
         self.join_btn = QPushButton()
@@ -53,7 +54,9 @@ class LoginForm(QMainWindow):
                                 self.teacher_class.show()
                                 self.close()
                             else:
-                                pass
+                                self.student_form.add_login(login)
+                                self.student_form.show()
+                                self.close()
                         else:
                             self.error_label.setText('Неверный пароль. Попробуйте снова')
 
@@ -93,6 +96,9 @@ class RegisterForm(QDialog):
                 data_base.commit()
                 if role == "Преподаватель":
                     cursor.execute(f"INSERT INTO teacher_stats VALUES ('{login}', 0, 0, 0)")
+                    data_base.commit()
+                elif role == 'Ученик':
+                    cursor.execute(f"INSERT INTO student_stats VALUES ('{login}', 0, 0, 0, 0)")
                     data_base.commit()
                 self.close()
             else:
@@ -339,6 +345,42 @@ class KickStudentForm(QWidget):
         data_base.commit()
         self.listWidget.clear()
         self.initialization(self.login)
+
+
+class StudentForm(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.look_res_btn = QPushButton()
+        self.completed_tasks_btn = QPushButton()
+        self.label_2 = QLabel()
+        self.label_3 = QLabel()
+        self.login_label = QLabel()
+        self.label_5 = QLabel()
+        self.label_6 = QLabel()
+        self.label_7 = QLabel()
+        self.label_8 = QLabel()
+        self.initUI()
+        uic.loadUi('student_form.ui', self)
+
+    def initUI(self):
+        self.setGeometry(300, 400, 500, 500)
+        self.setFixedSize(600, 500)
+
+    def add_login(self, login):
+        for row in cursor.execute('SELECT name, surname, password, email, role FROM users where login=?', (login,)):
+            self.name, self.surname, self.login, self.password, \
+            self.email, self.role = row[0], row[1], login, row[2], row[3], row[4]
+        self.login_label.setText(self.login)
+        self.label_2.setText(f'{self.name} {self.surname}')
+        self.label_3.setText(f'{self.role}')
+        self.update_student_stats()
+
+    def update_student_stats(self):
+        A = get_student_stats(cursor, self.login)
+        self.label_5.setText(f'Всего заданий выполнено: {A[3]}')
+        self.label_8.setText(f'Легких заданий выполнено: {A[0]}')
+        self.label_7.setText(f'Средних заданий выполнено: {A[1]}')
+        self.label_6.setText(f'Сложных заданий выполнено: {A[2]}')
 
 
 if __name__ == '__main__':
