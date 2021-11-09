@@ -147,13 +147,14 @@ class TeacherForm(QMainWindow):
         self.initUI()
         uic.loadUi('teacher_form.ui', self)
         self.label = QLabel()
+        self.bg_btn = QPushButton()
         self.add_student_btn.clicked.connect(self.on_add_student_btn)
         self.create_task_btn.clicked.connect(self.on_create_task_btn)
         self.kick_student_btn.clicked.connect(self.on_kick_student_btn)
 
     def initUI(self):
         self.setGeometry(300, 400, 500, 500)
-        self.setFixedSize(600, 500)
+        self.setFixedSize(600, 300)
 
     def add_login(self, login):
         for row in cursor.execute('SELECT name, surname, password, email, role FROM users where login=?', (login,)):
@@ -364,7 +365,7 @@ class StudentForm(QMainWindow):
 
     def initUI(self):
         self.setGeometry(300, 400, 500, 500)
-        self.setFixedSize(600, 500)
+        self.setFixedSize(600, 300)
 
     def add_login(self, login):
         for row in cursor.execute('SELECT name, surname, password, email, role FROM users where login=?', (login,)):
