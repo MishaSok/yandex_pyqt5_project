@@ -226,7 +226,7 @@ class AddStudentForm(QWidget):
             cursor.execute(f"INSERT INTO teacher_{self.login} VALUES ('{res}', '{str(self.student).split()[0]}', "
                            f"'{str(self.student).split()[1]}')")
             data_base.commit()
-            cursor.execute(f"UPDATE users SET have_teacher=1 WHERE login='{res}'")
+            cursor.execute(f"UPDATE users SET have_teacher=1, teacher_login='{self.login}' WHERE login='{res}'")
             data_base.commit()
             for row in cursor.execute(f"SELECT ppl_studying FROM teacher_stats WHERE login='{self.login}'"):
                 stat = int(row[0])
@@ -244,6 +244,7 @@ class CreateTaskForm(QDialog):
         self.task_text_edit = QPlainTextEdit()
         self.delete_file_btn = QPushButton()
         self.choose_file_btn = QPushButton()
+        self.lineEdit = QLineEdit()
         self.errors_label = QLabel()
         self.add_task_btn = QPushButton()
         self.close_btn = QPushButton()
@@ -258,7 +259,7 @@ class CreateTaskForm(QDialog):
 
     def initUI(self):
         self.setGeometry(300, 400, 500, 500)
-        self.setFixedSize(270, 300)
+        self.setFixedSize(270, 355)
 
     def initialization(self, login):
         self.login = login
@@ -290,19 +291,25 @@ class CreateTaskForm(QDialog):
             diff = self.comboBox.currentText()
             if self.fname == 'fname' and self.task_text_edit.toPlainText() == '':
                 self.errors_label.setText('Задание не может быть пустым.')
+            elif self.lineEdit.text() == '':
+                self.errors_label.setText('Укажите название для задания.')
             else:
-                cursor.execute(
-                    f"INSERT INTO tasks VALUES ('{self.login}', '{self.task_text_edit.toPlainText()}', '{fname}', "
-                    f"'{diff}', 0)")
-                data_base.commit()
-                for row in cursor.execute(f"SELECT tasks_created FROM teacher_stats WHERE login='{self.login}'"):
-                    stat = int(row[0])
-                cursor.execute(f"UPDATE teacher_stats SET tasks_created={stat + 1} WHERE login='{self.login}'")
-                data_base.commit()
-                self.task_text_edit.setPlainText('')
-                self.fname = 'fname'
-                self.errors_label.setText('Ошибок не обнаружено.')
-                self.close()
+                cursor.execute(f"SELECT task_text FROM tasks WHERE task_name='{self.lineEdit.text()}'")
+                if cursor.fetchone() is None:
+                    cursor.execute(
+                        f"INSERT INTO tasks VALUES ('{self.login}', '{self.lineEdit.text()}', '{self.task_text_edit.toPlainText()}', '{fname}', "
+                        f"'{diff}', 0, NULL)")
+                    data_base.commit()
+                    for row in cursor.execute(f"SELECT tasks_created FROM teacher_stats WHERE login='{self.login}'"):
+                        stat = int(row[0])
+                    cursor.execute(f"UPDATE teacher_stats SET tasks_created={stat + 1} WHERE login='{self.login}'")
+                    data_base.commit()
+                    self.task_text_edit.setPlainText('')
+                    self.fname = 'fname'
+                    self.errors_label.setText('Ошибок не обнаружено.')
+                    self.close()
+                else:
+                    self.errors_label.setText('Название для задания занято.')
         except Exception as Error:
             self.errors_label.setText(f'Ошибка {Error}')
             print(f'Method error: {Error}')
@@ -342,7 +349,7 @@ class KickStudentForm(QWidget):
             stat = int(row[0])
         cursor.execute(f"UPDATE teacher_stats SET ppl_studying={stat - 1} WHERE login='{self.login}'")
         data_base.commit()
-        cursor.execute(f"UPDATE users SET have_teacher=0 WHERE login='{res}'")
+        cursor.execute(f"UPDATE users SET have_teacher=0, teacher_login=NULL WHERE login='{res}'")
         data_base.commit()
         self.listWidget.clear()
         self.initialization(self.login)
@@ -351,7 +358,8 @@ class KickStudentForm(QWidget):
 class StudentForm(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.look_res_btn = QPushButton()
+        self.choose_task_form = ChooseTaskForm()
+        self.look_tasks_btn = QPushButton()
         self.completed_tasks_btn = QPushButton()
         self.label_2 = QLabel()
         self.label_3 = QLabel()
@@ -362,6 +370,7 @@ class StudentForm(QMainWindow):
         self.label_8 = QLabel()
         self.initUI()
         uic.loadUi('student_form.ui', self)
+        self.look_tasks_btn.clicked.connect(self.on_choose_task_form)
 
     def initUI(self):
         self.setGeometry(300, 400, 500, 500)
@@ -382,6 +391,46 @@ class StudentForm(QMainWindow):
         self.label_8.setText(f'Легких заданий выполнено: {A[0]}')
         self.label_7.setText(f'Средних заданий выполнено: {A[1]}')
         self.label_6.setText(f'Сложных заданий выполнено: {A[2]}')
+
+    def on_choose_task_form(self):
+        self.update_student_stats()
+        self.choose_task_form.listWidget.clear()
+        self.choose_task_form.initialization(self.login)
+        self.choose_task_form.show()
+
+
+class ChooseTaskForm(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.close_btn = QPushButton()
+        self.open_task_btn = QPushButton()
+        self.update_btn = QPushButton()
+        self.listWidget = QListWidget()
+        self.comboBox = QComboBox()
+        uic.loadUi('choose_task_form.ui', self)
+        self.initUI()
+        self.close_btn.clicked.connect(self.on_close_btn)
+
+    def initUI(self):
+        self.setGeometry(300, 300, 300, 300)
+        self.setFixedSize(275, 340)
+
+    def initialization(self, login):
+        for row in cursor.execute(f"SELECT teacher_login FROM users WHERE login='{login}'"):
+            self.teacher_login = row[0]
+        cursor.execute(f'''CREATE TABLE IF NOT EXISTS student_{login}(
+                    task_id INTEGER,
+                    teacher_login TEXT,
+                    is_completed INTEGER);
+                    ''')
+        data_base.commit()
+        for task in cursor.execute(
+                f"SELECT task_name, task_diff FROM tasks WHERE teacher_login='{self.teacher_login}' AND task_closed=0"):
+            self.listWidget.addItem(f'{task[0]} ({task[1]})')
+
+    def on_close_btn(self):
+        self.listWidget.clear()
+        self.close()
 
 
 if __name__ == '__main__':
