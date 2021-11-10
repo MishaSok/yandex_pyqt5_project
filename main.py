@@ -23,7 +23,7 @@ class LoginForm(QMainWindow):
         self.password_line = QLineEdit()
         self.initUI()
         self.setWindowTitle('test')
-        uic.loadUi('login_form.ui', self)
+        uic.loadUi('ui_folder\\login_form.ui', self)
         self.register_btn.clicked.connect(self.on_register_btn)
         self.join_btn.clicked.connect(self.on_join_btn)
 
@@ -69,7 +69,7 @@ class RegisterForm(QDialog):
         self.req_btn = QPushButton()
         self.initUI()
         self.reqregform = ReqRegForm()
-        uic.loadUi('register_form.ui', self)
+        uic.loadUi('ui_folder\\register_form.ui', self)
 
         # Регистрация нажатий
         self.register_button.clicked.connect(self.on_reg_btn)
@@ -118,7 +118,7 @@ class ReqRegForm(QDialog):
     def __init__(self):
         super().__init__()
         self.ok_btn = QPushButton()
-        uic.loadUi('req_form.ui', self)
+        uic.loadUi('ui_folder\\req_form.ui', self)
         self.ok_btn.clicked.connect(self.on_ok_btn)
 
     def initUI(self):
@@ -145,7 +145,7 @@ class TeacherForm(QMainWindow):
         self.label_7 = QLabel()
         self.create_task_btn = QPushButton()
         self.initUI()
-        uic.loadUi('teacher_form.ui', self)
+        uic.loadUi('ui_folder\\teacher_form.ui', self)
         self.label = QLabel()
         self.bg_btn = QPushButton()
         self.add_student_btn.clicked.connect(self.on_add_student_btn)
@@ -194,7 +194,7 @@ class AddStudentForm(QWidget):
         self.listWidget = QListWidget()
         self.add_btn = QPushButton()
         self.close_btn = QPushButton()
-        uic.loadUi('add_student_form.ui', self)
+        uic.loadUi('ui_folder\\add_student_form.ui', self)
         self.initUI()
         self.close_btn.clicked.connect(self.on_close_btn)
         self.add_btn.clicked.connect(self.on_add_btn)
@@ -251,7 +251,7 @@ class CreateTaskForm(QDialog):
         self.comboBox = QComboBox()
         self.fname = 'fname'
         self.initUI()
-        uic.loadUi('create_task_form.ui', self)
+        uic.loadUi('ui_folder\\create_task_form.ui', self)
         self.choose_file_btn.clicked.connect(self.on_choose_file_btn)
         self.delete_file_btn.clicked.connect(self.on_delete_file_btn)
         self.close_btn.clicked.connect(self.on_close_btn)
@@ -322,7 +322,7 @@ class KickStudentForm(QWidget):
         self.close_btn = QPushButton()
         self.kick_btn = QPushButton()
         self.listWidget = QListWidget()
-        uic.loadUi('kick_student_form.ui', self)
+        uic.loadUi('ui_folder\\kick_student_form.ui', self)
         self.initUI()
         self.close_btn.clicked.connect(self.on_close_btn)
         self.kick_btn.clicked.connect(self.on_kick_btn)
@@ -369,7 +369,7 @@ class StudentForm(QMainWindow):
         self.label_7 = QLabel()
         self.label_8 = QLabel()
         self.initUI()
-        uic.loadUi('student_form.ui', self)
+        uic.loadUi('ui_folder\\student_form.ui', self)
         self.look_tasks_btn.clicked.connect(self.on_choose_task_form)
 
     def initUI(self):
@@ -407,9 +407,10 @@ class ChooseTaskForm(QWidget):
         self.update_btn = QPushButton()
         self.listWidget = QListWidget()
         self.comboBox = QComboBox()
-        uic.loadUi('choose_task_form.ui', self)
+        uic.loadUi('ui_folder\\choose_task_form.ui', self)
         self.initUI()
         self.close_btn.clicked.connect(self.on_close_btn)
+        self.update_btn.clicked.connect(self.on_update_btn)
 
     def initUI(self):
         self.setGeometry(300, 300, 300, 300)
@@ -431,6 +432,28 @@ class ChooseTaskForm(QWidget):
     def on_close_btn(self):
         self.listWidget.clear()
         self.close()
+
+    def on_update_btn(self):
+        self.listWidget.clear()
+        if 'Все' in str(self.comboBox.currentText()):
+            for task in cursor.execute(
+                    f"SELECT task_name, task_diff FROM tasks WHERE teacher_login='{self.teacher_login}' AND task_closed=0"):
+                self.listWidget.addItem(f'{task[0]} ({task[1]})')
+        elif 'легкие' in str(self.comboBox.currentText()):
+            print('test')
+            for task in cursor.execute(
+                    f"SELECT task_name, task_diff FROM tasks WHERE teacher_login='{self.teacher_login}' AND task_closed=0 AND task_diff='Легкий'"):
+                self.listWidget.addItem(f'{task[0]} ({task[1]})')
+        elif 'средние' in str(self.comboBox.currentText()):
+            for task in cursor.execute(
+                    f"SELECT task_name, task_diff FROM tasks WHERE teacher_login='{self.teacher_login}' AND task_closed=0 AND task_diff='Средний'"):
+                self.listWidget.addItem(f'{task[0]} ({task[1]})')
+        elif 'сложные' in str(self.comboBox.currentText()):
+            for task in cursor.execute(
+                    f"SELECT task_name, task_diff FROM tasks WHERE teacher_login='{self.teacher_login}' AND task_closed=0 AND task_diff='Сложный'"):
+                self.listWidget.addItem(f'{task[0]} ({task[1]})')
+        else:
+            pass
 
 
 if __name__ == '__main__':
