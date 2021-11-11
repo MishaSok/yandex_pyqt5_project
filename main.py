@@ -402,6 +402,7 @@ class StudentForm(QMainWindow):
 class ChooseTaskForm(QWidget):
     def __init__(self):
         super().__init__()
+        self.task_form = Task()
         self.close_btn = QPushButton()
         self.open_task_btn = QPushButton()
         self.update_btn = QPushButton()
@@ -411,12 +412,14 @@ class ChooseTaskForm(QWidget):
         self.initUI()
         self.close_btn.clicked.connect(self.on_close_btn)
         self.update_btn.clicked.connect(self.on_update_btn)
+        self.open_task_btn.clicked.connect(self.on_open_task_btn)
 
     def initUI(self):
         self.setGeometry(300, 300, 300, 300)
         self.setFixedSize(275, 340)
 
     def initialization(self, login):
+        self.login = login
         for row in cursor.execute(f"SELECT teacher_login FROM users WHERE login='{login}'"):
             self.teacher_login = row[0]
         cursor.execute(f'''CREATE TABLE IF NOT EXISTS student_{login}(
@@ -454,6 +457,44 @@ class ChooseTaskForm(QWidget):
                 self.listWidget.addItem(f'{task[0]} ({task[1]})')
         else:
             pass
+
+    def on_open_task_btn(self):
+        self.text = self.listWidget.currentItem().text()
+        self.залупiвка = str(self.text).split()[0]
+        print('test')
+        for row in cursor.execute(f"SELECT id FROM tasks WHERE task_name='{self.залупiвка}'"):
+            task_id = row[0]
+
+        self.task_form.initialization(self.login, task_id, self.залупiвка)
+        self.task_form.show()
+
+
+class Task(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.label = QLabel()
+        self.check_box = QCheckBox()
+        self.choose_file_btn = QPushButton()
+        self.close_btn = QPushButton()
+        self.completed_task_btn = QPushButton()
+        self.delete_file_btn = QPushButton()
+        self.plainTextEdit = QPlainTextEdit()
+        self.task_name_label = QLabel()
+        self.task_text = QPlainTextEdit()
+        self.teacher_label = QLabel()
+        self.diff_label = QLabel()
+        self.initUI()
+
+    def initUI(self):
+        self.setGeometry(300, 300, 300, 300)
+        self.setFixedSize(300, 400)
+        uic.loadUi('ui_folder\\task.ui', self)
+
+    def initialization(self, login, task_id, task_name):
+        self.login = login
+        self.task_id = task_id
+        self.task_name = task_name
+        self.task_name_label.setText(f'Задание: "{self.task_name}"')
 
 
 if __name__ == '__main__':
