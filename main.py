@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import *
 import sqlite3
 from reg_func import *
 import time
+import os
 
 # Подключение к базе данных
 data_base = sqlite3.connect('data_base.db', timeout=10)
@@ -425,7 +426,9 @@ class ChooseTaskForm(QWidget):
         cursor.execute(f'''CREATE TABLE IF NOT EXISTS student_{login}(
                     task_id INTEGER,
                     teacher_login TEXT,
-                    is_completed INTEGER);
+                    is_completed INTEGER,
+                    task_text TEXT,
+                    file_path TEXT);
                     ''')
         data_base.commit()
         for task in cursor.execute(
@@ -443,7 +446,6 @@ class ChooseTaskForm(QWidget):
                     f"SELECT task_name, task_diff FROM tasks WHERE teacher_login='{self.teacher_login}' AND task_closed=0"):
                 self.listWidget.addItem(f'{task[0]} ({task[1]})')
         elif 'легкие' in str(self.comboBox.currentText()):
-            print('test')
             for task in cursor.execute(
                     f"SELECT task_name, task_diff FROM tasks WHERE teacher_login='{self.teacher_login}' AND task_closed=0 AND task_diff='Легкий'"):
                 self.listWidget.addItem(f'{task[0]} ({task[1]})')
@@ -461,7 +463,6 @@ class ChooseTaskForm(QWidget):
     def on_open_task_btn(self):
         self.text = self.listWidget.currentItem().text()
         self.залупiвка = str(self.text).split()[0]
-        print('test')
         for row in cursor.execute(f"SELECT id FROM tasks WHERE task_name='{self.залупiвка}'"):
             task_id = row[0]
 
@@ -472,8 +473,9 @@ class ChooseTaskForm(QWidget):
 class Task(QWidget):
     def __init__(self):
         super().__init__()
+        self.file_path = 'fname'
+
         self.label = QLabel()
-        self.check_box = QCheckBox()
         self.choose_file_btn = QPushButton()
         self.close_btn = QPushButton()
         self.completed_task_btn = QPushButton()
@@ -483,18 +485,86 @@ class Task(QWidget):
         self.task_text = QPlainTextEdit()
         self.teacher_label = QLabel()
         self.diff_label = QLabel()
+        self.download_file_btn = QPushButton()
+
         self.initUI()
+        self.download_file_btn.clicked.connect(self.on_download_file_btn)
+        self.choose_file_btn.clicked.connect(self.on_choose_file_btn)
+        self.delete_file_btn.clicked.connect(self.on_delete_file_btn)
+        self.close_btn.clicked.connect(self.on_close_btn)
+        self.completed_task_btn.clicked.connect(self.on_completed_task_btn)
 
     def initUI(self):
         self.setGeometry(300, 300, 300, 300)
-        self.setFixedSize(300, 400)
+        self.setFixedSize(590, 410)
         uic.loadUi('ui_folder\\task.ui', self)
+        self.task_text.setReadOnly(True)
 
     def initialization(self, login, task_id, task_name):
         self.login = login
         self.task_id = task_id
         self.task_name = task_name
         self.task_name_label.setText(f'Задание: "{self.task_name}"')
+        for row in cursor.execute(f"SELECT task_diff FROM tasks WHERE task_name='{self.task_name}'"):
+            self.task_diff = row[0]
+        self.diff_label.setText(f'Уровень сложности: {self.task_diff}')
+        for row in cursor.execute(f"SELECT teacher_login FROM users WHERE login='{self.login}'"):
+            self.teacher_login = row[0]
+            for stat in cursor.execute(f"SELECT name, surname FROM users WHERE login='{self.teacher_login}'"):
+                self.teacher_name = stat[0]
+                self.teacher_surname = stat[1]
+            self.teacher_label.setText(f"Преподаватель: {self.teacher_name} {self.teacher_surname}")
+        for row in cursor.execute(f"SELECT task_text FROM tasks WHERE task_name='{self.task_name}'"):
+            self.task_text_obj = row[0]
+            self.task_text.setPlainText(self.task_text_obj)
+        for row in cursor.execute(f"SELECT task_file FROM tasks WHERE task_name='{self.task_name}'"):
+            self.file_path = row[0]
+
+    def on_download_file_btn(self):
+        res = handler_file_path(self.file_path)[0]
+        self.label.setText(res)
+        print('test')
+        path = '\\'.join((handler_file_path(self.file_path)[1])[0:-1])
+        print(path)
+        path = os.path.realpath(path)
+        os.startfile(path)
+
+    def on_choose_file_btn(self):
+        fname = QFileDialog.getOpenFileName(self, 'Выбрать файл', '')[0]
+        self.file_path = fname
+        res = str(self.file_path).split('/')[-1]
+        print(str(self.file_path).strip())
+        if str(fname).strip() == '':
+            self.label.setText('Файл не был выбран')
+        else:
+            self.label.setText(f'Прикреплен файл: {res}')
+
+    def on_delete_file_btn(self):
+        if self.file_path == 'fname':
+            self.errors_label.setText('Файл не был выбран.')
+        else:
+            self.file_path = 'fname'
+            self.errors_label.setText('Файл был удален.')
+
+    def on_close_btn(self):
+        self.plainTextEdit.clear()
+        self.task_text.clear()
+        self.file_path = 'fname'
+        self.label.setText('Ошибок не обнаружено.')
+        self.close()
+
+    def on_completed_task_btn(self):
+        if self.plainTextEdit.toPlainText() == '' and self.fname == 'fname':
+            self.label.setText('Вы не можете сдать пустое задание.')
+        else:
+            cursor.execute(
+                f"INSERT INTO student_{self.login} VALUES ({self.task_id}, '{self.teacher_login}', 0, '{self.plainTextEdit.toPlainText()}', '{self.file_path}')")
+            data_base.commit()
+            self.plainTextEdit.clear()
+            self.task_text.clear()
+            self.file_path = 'fname'
+            self.label.setText('Ошибок не обнаружено.')
+            self.close()
 
 
 if __name__ == '__main__':
