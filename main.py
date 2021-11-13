@@ -5,6 +5,8 @@ import sqlite3
 from reg_func import *
 import time
 import os
+import student_classes
+import teacher_classes
 
 # Подключение к базе данных
 data_base = sqlite3.connect('data_base.db', timeout=10)
@@ -478,7 +480,7 @@ class Task(QWidget):
         self.label = QLabel()
         self.choose_file_btn = QPushButton()
         self.close_btn = QPushButton()
-        self.completed_task_btn = QPushButton()
+        self.complete_task_btn = QPushButton()
         self.delete_file_btn = QPushButton()
         self.plainTextEdit = QPlainTextEdit()
         self.task_name_label = QLabel()
@@ -492,7 +494,7 @@ class Task(QWidget):
         self.choose_file_btn.clicked.connect(self.on_choose_file_btn)
         self.delete_file_btn.clicked.connect(self.on_delete_file_btn)
         self.close_btn.clicked.connect(self.on_close_btn)
-        self.completed_task_btn.clicked.connect(self.on_completed_task_btn)
+        self.complete_task_btn.clicked.connect(self.on_completed_task_btn)
 
     def initUI(self):
         self.setGeometry(300, 300, 300, 300)
@@ -541,10 +543,10 @@ class Task(QWidget):
 
     def on_delete_file_btn(self):
         if self.file_path == 'fname':
-            self.errors_label.setText('Файл не был выбран.')
+            self.label.setText('Файл не был выбран.')
         else:
             self.file_path = 'fname'
-            self.errors_label.setText('Файл был удален.')
+            self.label.setText('Файл был удален.')
 
     def on_close_btn(self):
         self.plainTextEdit.clear()
@@ -554,17 +556,20 @@ class Task(QWidget):
         self.close()
 
     def on_completed_task_btn(self):
-        if self.plainTextEdit.toPlainText() == '' and self.fname == 'fname':
-            self.label.setText('Вы не можете сдать пустое задание.')
-        else:
-            cursor.execute(
-                f"INSERT INTO student_{self.login} VALUES ({self.task_id}, '{self.teacher_login}', 0, '{self.plainTextEdit.toPlainText()}', '{self.file_path}')")
-            data_base.commit()
-            self.plainTextEdit.clear()
-            self.task_text.clear()
-            self.file_path = 'fname'
-            self.label.setText('Ошибок не обнаружено.')
-            self.close()
+        try:
+            if self.plainTextEdit.toPlainText() == '' and self.fname == 'fname':
+                self.label.setText('Вы не можете сдать пустое задание.')
+            else:
+                cursor.execute(
+                    f"INSERT INTO student_{self.login} VALUES ({self.task_id}, '{self.teacher_login}', 0, '{self.plainTextEdit.toPlainText()}', '{self.file_path}')")
+                data_base.commit()
+                self.plainTextEdit.clear()
+                self.task_text.clear()
+                self.file_path = 'fname'
+                self.label.setText('Ошибок не обнаружено.')
+                self.close()
+        except Exception as Error:
+            print(Error)
 
 
 if __name__ == '__main__':
