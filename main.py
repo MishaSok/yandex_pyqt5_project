@@ -196,6 +196,7 @@ class TeacherForm(QMainWindow):
         self.checking_task_form.initialization(self.login)
         self.checking_task_form.show()
 
+
 class AddStudentForm(QWidget):
     def __init__(self):
         super().__init__()
@@ -570,7 +571,7 @@ class Task(QWidget):
                 cursor.execute(f"SELECT task_id FROM student_{self.login} WHERE task_id={self.task_id}")
                 if cursor.fetchone() is None:
                     cursor.execute(
-                        f"INSERT INTO student_{self.login} VALUES ({self.task_id}, '{self.teacher_login}', 0, '{self.plainTextEdit.toPlainText()}', '{self.file_path}')")
+                        f"INSERT INTO student_{self.login} VALUES ({self.task_id}, '{self.teacher_login}', 0, '{self.plainTextEdit.toPlainText()}', '{self.file_path}', '{self.task_name}')")
                     data_base.commit()
                     self.plainTextEdit.clear()
                     self.task_text.clear()
@@ -596,7 +597,7 @@ class CheckingTaskForm(QMainWindow):
     def initUI(self):
         uic.loadUi('ui_folder\\checking_tasks_form.ui', self)
         self.setGeometry(300, 300, 300, 300)
-        self.setFixedSize(280, 340)
+        self.setFixedSize(440, 340)
 
     def initialization(self, login):
         try:
@@ -608,9 +609,23 @@ class CheckingTaskForm(QMainWindow):
                 mass = []
                 for row in cursor.execute(f"SELECT login FROM users WHERE teacher_login='{self.login}'"):
                     mass.append(row[0])
+                for i in mass:
+                    print(i)
+                    for row in cursor.execute(f"SELECT task_name FROM student_{i} WHERE is_completed=0"):
+                        self.task_name = row[0]
+                    print('хуй')
+                    for row in cursor.execute(f"SELECT name, surname FROM users WHERE login='{i}'"):
+                        self.name = row[0]
+                        self.surname = row[1]
+                    self.listWidget.addItem(f"Задание:'{self.task_name}' {self.name} {self.surname}")
+
 
         except Exception as Error:
             print(Error)
+
+    def on_close_btn(self):
+        self.listWidget.clear()
+        self.close()
 
 
 if __name__ == '__main__':
