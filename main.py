@@ -137,10 +137,12 @@ class TeacherForm(QMainWindow):
         super().__init__()
         self.add_student_form = AddStudentForm()
         self.add_student_btn = QPushButton()
+        self.checking_task_form = CheckingTaskForm()
         self.create_task_form = CreateTaskForm()
         self.kick_student_btn = QPushButton()
         self.create_kick_form = KickStudentForm()
         self.login_label = QLabel()
+        self.look_res_btn = QPushButton()
         self.label_2 = QLabel()
         self.label_3 = QLabel()
         self.label_5 = QLabel()
@@ -150,10 +152,10 @@ class TeacherForm(QMainWindow):
         self.initUI()
         uic.loadUi('ui_folder\\teacher_form.ui', self)
         self.label = QLabel()
-        self.bg_btn = QPushButton()
         self.add_student_btn.clicked.connect(self.on_add_student_btn)
         self.create_task_btn.clicked.connect(self.on_create_task_btn)
         self.kick_student_btn.clicked.connect(self.on_kick_student_btn)
+        self.look_res_btn.clicked.connect(self.on_checking_task_form)
 
     def initUI(self):
         self.setGeometry(300, 400, 500, 500)
@@ -189,6 +191,10 @@ class TeacherForm(QMainWindow):
         self.create_kick_form.show()
         self.create_kick_form.initialization(self.login)
 
+    def on_checking_task_form(self):
+        self.update_teacher_stats()
+        self.checking_task_form.initialization(self.login)
+        self.checking_task_form.show()
 
 class AddStudentForm(QWidget):
     def __init__(self):
@@ -430,7 +436,8 @@ class ChooseTaskForm(QWidget):
                     teacher_login TEXT,
                     is_completed INTEGER,
                     task_text TEXT,
-                    file_path TEXT);
+                    file_path TEXT,
+                    task_name TEXT);
                     ''')
         data_base.commit()
         for task in cursor.execute(
@@ -557,17 +564,51 @@ class Task(QWidget):
 
     def on_completed_task_btn(self):
         try:
-            if self.plainTextEdit.toPlainText() == '' and self.fname == 'fname':
+            if self.plainTextEdit.toPlainText() == '' and self.file_path == 'fname':
                 self.label.setText('Вы не можете сдать пустое задание.')
             else:
-                cursor.execute(
-                    f"INSERT INTO student_{self.login} VALUES ({self.task_id}, '{self.teacher_login}', 0, '{self.plainTextEdit.toPlainText()}', '{self.file_path}')")
-                data_base.commit()
-                self.plainTextEdit.clear()
-                self.task_text.clear()
-                self.file_path = 'fname'
-                self.label.setText('Ошибок не обнаружено.')
-                self.close()
+                cursor.execute(f"SELECT task_id FROM student_{self.login} WHERE task_id={self.task_id}")
+                if cursor.fetchone() is None:
+                    cursor.execute(
+                        f"INSERT INTO student_{self.login} VALUES ({self.task_id}, '{self.teacher_login}', 0, '{self.plainTextEdit.toPlainText()}', '{self.file_path}')")
+                    data_base.commit()
+                    self.plainTextEdit.clear()
+                    self.task_text.clear()
+                    self.file_path = 'fname'
+                    self.label.setText('Ошибок не обнаружено.')
+                    self.close()
+                else:
+                    self.label.setText('Вы уже выполнили это задание.')
+        except Exception as Error:
+            print(Error)
+
+
+class CheckingTaskForm(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.comboBox = QComboBox()
+        self.update_btn = QPushButton()
+        self.listWidget = QListWidget()
+        self.check_task_btn = QPushButton()
+        self.close_btn = QPushButton()
+        self.initUI()
+
+    def initUI(self):
+        uic.loadUi('ui_folder\\checking_tasks_form.ui', self)
+        self.setGeometry(300, 300, 300, 300)
+        self.setFixedSize(280, 340)
+
+    def initialization(self, login):
+        try:
+            self.login = login
+            cursor.execute(f"SELECT login FROM users WHERE teacher_login='{self.login}'")
+            if cursor.fetchone() is None:
+                pass
+            else:
+                mass = []
+                for row in cursor.execute(f"SELECT login FROM users WHERE teacher_login='{self.login}'"):
+                    mass.append(row[0])
+
         except Exception as Error:
             print(Error)
 

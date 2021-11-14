@@ -1,1 +1,1 @@
-# yandex_pyqt5_project
+# Яндекс.Учеба
