@@ -95,7 +95,7 @@ class RegisterForm(QDialog):
             cursor.execute(f'SELECT login from users where login="{login}"')
             if cursor.fetchone() is None:
                 cursor.execute(
-                    f"INSERT INTO users VALUES ('{name}', '{surname}', '{login}', '{password}', '{email}', '{role}', 0)")
+                    f"INSERT INTO users VALUES ('{name}', '{surname}', '{login}', '{password}', '{email}', '{role}', 0, NULL)")
                 data_base.commit()
                 if role == "Преподаватель":
                     cursor.execute(f"INSERT INTO teacher_stats VALUES ('{login}', 0, 0, 0)")
@@ -593,6 +593,8 @@ class CheckingTaskForm(QMainWindow):
         self.check_task_btn = QPushButton()
         self.close_btn = QPushButton()
         self.initUI()
+        self.update_btn.clicked.connect(self.on_update_btn)
+        self.close_btn.clicked.connect(self.on_close_btn)
 
     def initUI(self):
         uic.loadUi('ui_folder\\checking_tasks_form.ui', self)
@@ -601,7 +603,10 @@ class CheckingTaskForm(QMainWindow):
 
     def initialization(self, login):
         try:
+            self.listWidget.clear()
+            self.comboBox.clear()
             self.login = login
+            self.comboBox.addItem('Все ученики')
             cursor.execute(f"SELECT login FROM users WHERE teacher_login='{self.login}'")
             if cursor.fetchone() is None:
                 pass
@@ -610,22 +615,98 @@ class CheckingTaskForm(QMainWindow):
                 for row in cursor.execute(f"SELECT login FROM users WHERE teacher_login='{self.login}'"):
                     mass.append(row[0])
                 for i in mass:
-                    print(i)
-                    for row in cursor.execute(f"SELECT task_name FROM student_{i} WHERE is_completed=0"):
+                    self.comboBox.addItem(str(i))
+                    for row in cursor.execute(
+                            f"SELECT task_name FROM student_{i} WHERE is_completed=0 AND teacher_login='{self.login}'"):
                         self.task_name = row[0]
-                    print('хуй')
-                    for row in cursor.execute(f"SELECT name, surname FROM users WHERE login='{i}'"):
+                    for row in cursor.execute(f"SELECT name, surname, login FROM users WHERE login='{i}'"):
                         self.name = row[0]
                         self.surname = row[1]
-                    self.listWidget.addItem(f"Задание:'{self.task_name}' {self.name} {self.surname}")
-
-
+                        self.student_login = row[2]
+                    self.listWidget.addItem(
+                        f"Задание: '{self.task_name}' {self.name} {self.surname} ({self.student_login})")
         except Exception as Error:
             print(Error)
 
     def on_close_btn(self):
         self.listWidget.clear()
+        self.comboBox.clear()
         self.close()
+
+    def on_update_btn(self):
+        self.listWidget.clear()
+        self.current_combo_text = self.comboBox.currentText()
+        if self.current_combo_text != 'Все ученики':
+            for row in cursor.execute(
+                    f"SELECT task_name FROM student_{self.current_combo_text} WHERE is_completed=0 AND teacher_login='{self.login}'"):
+                self.task_name = row[0]
+            for row in cursor.execute(
+                    f"SELECT name, surname, login FROM users WHERE login='{self.current_combo_text}'"):
+                self.name = row[0]
+                self.surname = row[1]
+                self.student_login = row[2]
+            self.listWidget.addItem(
+                f"Задание: '{self.task_name}' {self.name} {self.surname} ({self.student_login})")
+        else:
+            self.comboBox.clear()
+            self.comboBox.addItem('Все ученики')
+            mass = []
+            for row in cursor.execute(f"SELECT login FROM users WHERE teacher_login='{self.login}'"):
+                mass.append(row[0])
+            for i in mass:
+                self.comboBox.addItem(str(i))
+                for row in cursor.execute(
+                        f"SELECT task_name FROM student_{i} WHERE is_completed=0 AND teacher_login='{self.login}'"):
+                    self.task_name = row[0]
+                for row in cursor.execute(f"SELECT name, surname, login FROM users WHERE login='{i}'"):
+                    self.name = row[0]
+                    self.surname = row[1]
+                    self.student_login = row[2]
+                self.listWidget.addItem(
+                    f"Задание: '{self.task_name}' {self.name} {self.surname} ({self.student_login})")
+
+
+class TeacherCheckingTask(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.task_name_label = QLabel()
+        self.task_text = QPlainTextEdit()
+        self.student_result_text = QPlainTextEdit()
+        self.open_task_btn = QPushButton()
+        self.diff_label = QLabel()
+        self.student_label = QLabel()
+        self.teacher_label = QLabel()
+        self.open_student_file = QPushButton()
+        self.mark_0_btn = QPushButton()
+        self.mark_1_btn = QPushButton()
+        self.mark_2_btn = QPushButton()
+        self.mark_3_btn = QPushButton()
+        self.mark_4_btn = QPushButton()
+        self.mark_5_btn = QPushButton()
+        self.ok_btn = QPushButton()
+        self.close_btn = QPushButton()
+
+    def initUI(self):
+        uic.loadUi('task_result_checking.ui', self)
+        self.setGeometry(300, 300, 580, 425)
+        self.setFixedSize(580, 425)
+
+    def initialization(self, login, student_login, task_name):
+        self.login = login
+        self.student_login = student_login
+        self.task_name = task_name
+        try:
+            for row in cursor.execute(f"SELECT name, surname FROM users WHERE login={self.student_login}"):
+                self.student_name = row[0]
+                self.student_surname = row[1]
+                self.student_label.setText(f'Ученик: {self.student_name} {self.student_surname}')
+            for row in cursor.execute(f"SELECT name, surname FROM users WHERE login='{self.login}'"):
+                self.name = row[0]
+                self.surname = row[1]
+                self.teacher_label.setText(f"Преподаватель: {self.name} {self.surname}")
+            # Продолжить потом
+        except Exception as Error:
+            print('ResultCheckingTask error:', Error)
 
 
 if __name__ == '__main__':

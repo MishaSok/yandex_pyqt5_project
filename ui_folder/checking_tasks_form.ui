@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Проверить задание</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QComboBox" name="comboBox">
@@ -67,7 +67,7 @@
      </font>
     </property>
     <property name="text">
-     <string>Фильтры по заданиям:</string>
+     <string>Фильтры по ученикам:</string>
     </property>
    </widget>
    <widget class="QPushButton" name="update_btn">
