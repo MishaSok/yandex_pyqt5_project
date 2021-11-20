@@ -705,7 +705,7 @@ class TeacherCheckingTask(QMainWindow):
                 self.surname = row[1]
                 self.teacher_label.setText(f"Преподаватель: {self.name} {self.surname}")
             # Продолжить потом
-        except Exception as Error:
+        except Exception as Error:  
             print('ResultCheckingTask error:', Error)
 
 
