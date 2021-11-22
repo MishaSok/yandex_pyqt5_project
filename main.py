@@ -103,6 +103,16 @@ class RegisterForm(QDialog):
                 elif role == 'Ученик':
                     cursor.execute(f"INSERT INTO student_stats VALUES ('{login}', 0, 0, 0, 0)")
                     data_base.commit()
+                    cursor.execute(f'''CREATE TABLE IF NOT EXISTS student_{login}(
+                                        task_id INTEGER,
+                                        teacher_login TEXT,
+                                        is_completed INTEGER,
+                                        task_text TEXT,
+                                        file_path TEXT,
+                                        task_name TEXT,
+                                        mark INTEGER);
+                                        ''')
+                    data_base.commit()
                 self.close()
             else:
                 print('Такой логин уже существует')
@@ -432,15 +442,6 @@ class ChooseTaskForm(QWidget):
         self.login = login
         for row in cursor.execute(f"SELECT teacher_login FROM users WHERE login='{login}'"):
             self.teacher_login = row[0]
-        cursor.execute(f'''CREATE TABLE IF NOT EXISTS student_{login}(
-                    task_id INTEGER,
-                    teacher_login TEXT,
-                    is_completed INTEGER,
-                    task_text TEXT,
-                    file_path TEXT,
-                    task_name TEXT);
-                    ''')
-        data_base.commit()
         for task in cursor.execute(
                 f"SELECT task_name, task_diff FROM tasks WHERE teacher_login='{self.teacher_login}' AND task_closed=0"):
             self.listWidget.addItem(f'{task[0]} ({task[1]})')
@@ -571,7 +572,7 @@ class Task(QWidget):
                 cursor.execute(f"SELECT task_id FROM student_{self.login} WHERE task_id={self.task_id}")
                 if cursor.fetchone() is None:
                     cursor.execute(
-                        f"INSERT INTO student_{self.login} VALUES ({self.task_id}, '{self.teacher_login}', 0, '{self.plainTextEdit.toPlainText()}', '{self.file_path}', '{self.task_name}')")
+                        f"INSERT INTO student_{self.login} VALUES ({self.task_id}, '{self.teacher_login}', 0, '{self.plainTextEdit.toPlainText()}', '{self.file_path}', '{self.task_name}', NULL)")
                     data_base.commit()
                     self.plainTextEdit.clear()
                     self.task_text.clear()
@@ -587,6 +588,7 @@ class Task(QWidget):
 class CheckingTaskForm(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.teacher_checking_task = TeacherCheckingTask()
         self.comboBox = QComboBox()
         self.update_btn = QPushButton()
         self.listWidget = QListWidget()
@@ -595,6 +597,7 @@ class CheckingTaskForm(QMainWindow):
         self.initUI()
         self.update_btn.clicked.connect(self.on_update_btn)
         self.close_btn.clicked.connect(self.on_close_btn)
+        self.check_task_btn.clicked.connect(self.on_teacher_checking_task_btn)
 
     def initUI(self):
         uic.loadUi('ui_folder\\checking_tasks_form.ui', self)
@@ -665,6 +668,18 @@ class CheckingTaskForm(QMainWindow):
                 self.listWidget.addItem(
                     f"Задание: '{self.task_name}' {self.name} {self.surname} ({self.student_login})")
 
+    def on_teacher_checking_task_btn(self):
+        res = self.listWidget.currentItem().text()
+        if res == '':
+            pass
+        else:
+            task_name = res.split("'")[1]
+            student_login = res.split()[-1].replace(')', '').replace('(', '')
+            print(task_name)
+            print(student_login)
+            self.teacher_checking_task.initialization(self.login, student_login, task_name)
+            self.teacher_checking_task.show()
+
 
 class TeacherCheckingTask(QMainWindow):
     def __init__(self):
@@ -674,6 +689,7 @@ class TeacherCheckingTask(QMainWindow):
         self.student_result_text = QPlainTextEdit()
         self.open_task_btn = QPushButton()
         self.diff_label = QLabel()
+        self.choose_mark_label = QLabel()
         self.student_label = QLabel()
         self.teacher_label = QLabel()
         self.open_student_file = QPushButton()
@@ -685,9 +701,18 @@ class TeacherCheckingTask(QMainWindow):
         self.mark_5_btn = QPushButton()
         self.ok_btn = QPushButton()
         self.close_btn = QPushButton()
+        self.initUI()
+
+        # Выставление оценки с помощью кнопок
+        self.mark_0_btn.clicked.connect(self.on_mark0_btn)
+        self.mark_1_btn.clicked.connect(self.on_mark1_btn)
+        self.mark_2_btn.clicked.connect(self.on_mark2_btn)
+        self.mark_3_btn.clicked.connect(self.on_mark3_btn)
+        self.mark_4_btn.clicked.connect(self.on_mark4_btn)
+        self.mark_5_btn.clicked.connect(self.on_mark5_btn)
 
     def initUI(self):
-        uic.loadUi('task_result_checking.ui', self)
+        uic.loadUi('ui_folder\\task_result_checking.ui', self)
         self.setGeometry(300, 300, 580, 425)
         self.setFixedSize(580, 425)
 
@@ -695,8 +720,9 @@ class TeacherCheckingTask(QMainWindow):
         self.login = login
         self.student_login = student_login
         self.task_name = task_name
+        print('test')
         try:
-            for row in cursor.execute(f"SELECT name, surname FROM users WHERE login={self.student_login}"):
+            for row in cursor.execute(f"SELECT name, surname FROM users WHERE login='{self.student_login}'"):
                 self.student_name = row[0]
                 self.student_surname = row[1]
                 self.student_label.setText(f'Ученик: {self.student_name} {self.student_surname}')
@@ -704,9 +730,31 @@ class TeacherCheckingTask(QMainWindow):
                 self.name = row[0]
                 self.surname = row[1]
                 self.teacher_label.setText(f"Преподаватель: {self.name} {self.surname}")
-            # Продолжить потом
-        except Exception as Error:  
+            for row in cursor.execute(
+                    f"SELECT file_path, task_name, task_text FROM student_{self.student_login} WHERE task_name='{self.task_name}'"):
+                self.file_path = row[0]
+                self.task_name_label.setText(f'Задание: {row[1]}')
+                self.student_result_text.setPlainText(row[2])
+        except Exception as Error:
             print('ResultCheckingTask error:', Error)
+
+    def on_mark0_btn(self):
+        self.choose_mark_label.setText('Вы поставили оценку: 0')
+
+    def on_mark1_btn(self):
+        self.choose_mark_label.setText('Вы поставили оценку: 1')
+
+    def on_mark2_btn(self):
+        self.choose_mark_label.setText('Вы поставили оценку: 2')
+
+    def on_mark3_btn(self):
+        self.choose_mark_label.setText('Вы поставили оценку: 3')
+
+    def on_mark4_btn(self):
+        self.choose_mark_label.setText('Вы поставили оценку: 4')
+
+    def on_mark5_btn(self):
+        self.choose_mark_label.setText('Вы поставили оценку: 5')
 
 
 if __name__ == '__main__':
