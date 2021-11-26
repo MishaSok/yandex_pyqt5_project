@@ -534,7 +534,6 @@ class Task(QWidget):
     def on_download_file_btn(self):
         res = handler_file_path(self.file_path)[0]
         self.label.setText(res)
-        print('test')
         path = '\\'.join((handler_file_path(self.file_path)[1])[0:-1])
         print(path)
         path = os.path.realpath(path)
@@ -711,10 +710,17 @@ class TeacherCheckingTask(QMainWindow):
         self.mark_4_btn.clicked.connect(self.on_mark4_btn)
         self.mark_5_btn.clicked.connect(self.on_mark5_btn)
 
+        # Открытые файлов
+        self.open_task_btn.clicked.connect(self.on_open_task_btn)
+        self.open_student_file.clicked.connect(self.on_open_student_file_btn)
+
+        self.ok_btn.clicked.connect(self.on_ok_btn)
     def initUI(self):
         uic.loadUi('ui_folder\\task_result_checking.ui', self)
         self.setGeometry(300, 300, 580, 425)
         self.setFixedSize(580, 425)
+        self.student_result_text.setReadOnly(True)
+        self.task_text.setReadOnly(True)
 
     def initialization(self, login, student_login, task_name):
         self.login = login
@@ -755,6 +761,36 @@ class TeacherCheckingTask(QMainWindow):
 
     def on_mark5_btn(self):
         self.choose_mark_label.setText('Вы поставили оценку: 5')
+
+    def on_open_task_btn(self):
+        for row in cursor.execute(f"SELECT task_file FROM tasks WHERE task_name='{self.task_name}'"):
+            path = row[0]
+            path = '\\'.join((handler_file_path(self.file_path)[1])[0:-1])
+            path = os.path.realpath(path)
+            os.startfile(path)
+
+    def on_open_student_file_btn(self):
+        for row in cursor.execute(
+                f"SELECT file_path FROM student_{self.student_login} WHERE task_name='{self.task_name}'"):
+            path = row[0]
+            path = '\\'.join((handler_file_path(self.file_path)[1])[0:-1])
+            path = os.path.realpath(path)
+            os.startfile(path)
+
+    def on_ok_btn(self):
+        mark = self.choose_mark_label.text()
+        if mark == 'Выберите оценку...':
+            pass
+        else:
+            mark = self.choose_mark_label.text().split()[-1]
+            print(mark)
+            cursor.execute(
+                f"UPDATE student_{self.student_login} SET mark={mark}, is_completed=1 WHERE task_name='{self.task_name}'")
+            data_base.commit()
+            self.student_result_text.clear()
+            self.task_text.clear()
+            self.choose_mark_label.setText('Выберите оценку...')
+            self.close()
 
 
 if __name__ == '__main__':
