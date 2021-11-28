@@ -787,6 +787,30 @@ class TeacherCheckingTask(QMainWindow):
             cursor.execute(
                 f"UPDATE student_{self.student_login} SET mark={mark}, is_completed=1 WHERE task_name='{self.task_name}'")
             data_base.commit()
+
+            for row in cursor.execute(f"SELECT task_diff FROM tasks WHERE task_name='{self.task_name}'"):
+                task_diff = row[0]
+                print(task_diff)
+                if task_diff == 'Легкий':
+                    for row in cursor.execute(f"SELECT easy_tasks, tasks_completed FROM student_stats WHERE login='{self.student_login}'"):
+                        n = row[0]
+                        n1 = row[1]
+                        cursor.execute(f"UPDATE student_stats SET easy_tasks={n + 1}, tasks_completed={n1 + 1} WHERE login='{self.student_login}'")
+                        data_base.commit()
+                elif task_diff == 'Средний':
+                    for row in cursor.execute(f"SELECT medium_tasks, tasks_completed FROM student_stats WHERE login='{self.student_login}'"):
+                        n = row[0]
+                        n1 = row[1]
+                        cursor.execute(f"UPDATE student_stats SET medium_tasks={n + 1}, tasks_completed={n1 + 1} WHERE login='{self.student_login}'")
+                        data_base.commit()
+                elif task_diff == 'Сложный':
+                    for row in cursor.execute(f"SELECT hard_tasks, tasks_completed FROM student_stats WHERE login='{self.student_login}'"):
+                        n = row[0]
+                        n1 = row[1]
+                        cursor.execute(f"UPDATE student_stats SET hard_tasks={n + 1}, tasks_completed={n1 + 1} WHERE login='{self.student_login}'")
+                        data_base.commit()
+                else:
+                    pass
             self.student_result_text.clear()
             self.task_text.clear()
             self.choose_mark_label.setText('Выберите оценку...')
