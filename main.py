@@ -146,6 +146,7 @@ class TeacherForm(QMainWindow):
     def __init__(self):
         super().__init__()
         self.add_student_form = AddStudentForm()
+        self.student_stats_form = StudentStatsForm()
         self.add_student_btn = QPushButton()
         self.checking_task_form = CheckingTaskForm()
         self.create_task_form = CreateTaskForm()
@@ -159,13 +160,17 @@ class TeacherForm(QMainWindow):
         self.label_6 = QLabel()
         self.label_7 = QLabel()
         self.create_task_btn = QPushButton()
+        self.student_stats_btn = QPushButton()
         self.initUI()
         uic.loadUi('ui_folder\\teacher_form.ui', self)
         self.label = QLabel()
+
+        # Подключение кнопок
         self.add_student_btn.clicked.connect(self.on_add_student_btn)
         self.create_task_btn.clicked.connect(self.on_create_task_btn)
         self.kick_student_btn.clicked.connect(self.on_kick_student_btn)
         self.look_res_btn.clicked.connect(self.on_checking_task_form)
+        self.student_stats_btn.clicked.connect(self.on_student_stats_form)
 
     def initUI(self):
         self.setGeometry(300, 400, 500, 500)
@@ -205,6 +210,11 @@ class TeacherForm(QMainWindow):
         self.update_teacher_stats()
         self.checking_task_form.initialization(self.login)
         self.checking_task_form.show()
+
+    def on_student_stats_form(self):
+        self.update_teacher_stats()
+        self.student_stats_form.initialization(self.login)
+        self.student_stats_form.show()
 
 
 class AddStudentForm(QWidget):
@@ -949,6 +959,65 @@ class LookTaskForm(QMainWindow):
                 os.startfile(path)
         except Exception as Error:
             print(Error)
+
+
+class StudentStatsForm(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.listWidget = QListWidget()
+        self.close_btn = QPushButton()
+        self.name = QLabel()
+        self.surname = QLabel()
+        self.login = QLabel()
+        self.tasks_completed = QLabel()
+        self.easy_tasks = QLabel()
+        self.medium_tasks = QLabel()
+        self.hard_tasks = QLabel()
+        self.initUI()
+
+        # Подключение ивента
+        self.listWidget.currentRowChanged.connect(self.on_changed_ppl)
+
+        # Подключение кнопок
+        self.close_btn.clicked.connect(self.on_close_btn)
+
+    def initUI(self):
+        uic.loadUi('ui_folder\\student_stats_form.ui', self)
+        self.setGeometry(300, 300, 300, 300)
+        self.setFixedSize(650, 350)
+
+    def initialization(self, teacher_login):
+        self.listWidget.clear()
+        self.teacher_login = teacher_login
+        for row in cursor.execute(
+                f"SELECT student_name, student_surname, student_login FROM teacher_{self.teacher_login}"):
+            self.listWidget.addItem(f'{row[0]} {row[1]} ({row[2]})')
+
+    def on_changed_ppl(self):
+        try:
+            print(self.listWidget.currentItem().text())
+
+            widget_text = self.listWidget.currentItem().text()
+            widget_name = widget_text.split()[0]
+            widget_surname = widget_text.split()[1]
+            widget_login = widget_text.split()[-1].replace(')', '').replace('(', '')
+
+            self.name.setText(f'Имя: {widget_name}')
+            self.surname.setText(f'Фамилия: {widget_surname}')
+            self.login.setText(f'Логин: {widget_login}')
+
+            for row in cursor.execute(
+                    f"SELECT easy_tasks, medium_tasks, hard_tasks, tasks_completed FROM student_stats WHERE login='{widget_login}'"):
+                self.easy_tasks.setText(f'Легких заданий выполнено: {row[0]}')
+                self.medium_tasks.setText(f'Средних заданий выполнено: {row[1]}')
+                self.hard_tasks.setText(f'Сложных заданий выполнено: {row[2]}')
+                self.tasks_completed.setText(f'Всего заданий выполнено: {row[3]}')
+        except Exception as Error:
+            print(Error)
+
+    def on_close_btn(self):
+        self.listWidget.clear()
+        self.close()
 
 
 if __name__ == '__main__':

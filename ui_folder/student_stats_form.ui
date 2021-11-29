@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>653</width>
+    <height>350</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Статистика учеников</string>
+  </property>
+  <widget class="QPushButton" name="close_btn">
+   <property name="geometry">
+    <rect>
+     <x>60</x>
+     <y>300</y>
+     <width>251</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>11</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>Закрыть</string>
+   </property>
+  </widget>
+  <widget class="QListWidget" name="listWidget">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>20</y>
+     <width>331</width>
+     <height>271</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QWidget" name="verticalLayoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>390</x>
+     <y>20</y>
+     <width>251</width>
+     <height>271</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QLabel" name="name">
+      <property name="text">
+       <string>Имя:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="surname">
+      <property name="text">
+       <string>Фамилия</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="login">
+      <property name="text">
+       <string>Логин:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="tasks_completed">
+      <property name="text">
+       <string>Всего заданий выполнено:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="easy_tasks">
+      <property name="text">
+       <string>Легких заданий выполнено:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="medium_tasks">
+      <property name="text">
+       <string>Средних заданий выполнено:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="hard_tasks">
+      <property name="text">
+       <string>Сложных заданий выполнено:</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
