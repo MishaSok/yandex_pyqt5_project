@@ -379,6 +379,7 @@ class StudentForm(QMainWindow):
     def __init__(self):
         super().__init__()
         self.choose_task_form = ChooseTaskForm()
+        self.completed_tasks_list_form = CompletedTasksListForm()
         self.look_tasks_btn = QPushButton()
         self.completed_tasks_btn = QPushButton()
         self.label_2 = QLabel()
@@ -391,6 +392,7 @@ class StudentForm(QMainWindow):
         self.initUI()
         uic.loadUi('ui_folder\\student_form.ui', self)
         self.look_tasks_btn.clicked.connect(self.on_choose_task_form)
+        self.completed_tasks_btn.clicked.connect(self.on_completed_tasks_btn)
 
     def initUI(self):
         self.setGeometry(300, 400, 500, 500)
@@ -417,6 +419,10 @@ class StudentForm(QMainWindow):
         self.choose_task_form.listWidget.clear()
         self.choose_task_form.initialization(self.login)
         self.choose_task_form.show()
+
+    def on_completed_tasks_btn(self):
+        self.completed_tasks_list_form.initialization(self.login)
+        self.completed_tasks_list_form.show()
 
 
 class ChooseTaskForm(QWidget):
@@ -715,6 +721,7 @@ class TeacherCheckingTask(QMainWindow):
         self.open_student_file.clicked.connect(self.on_open_student_file_btn)
 
         self.ok_btn.clicked.connect(self.on_ok_btn)
+
     def initUI(self):
         uic.loadUi('ui_folder\\task_result_checking.ui', self)
         self.setGeometry(300, 300, 580, 425)
@@ -792,22 +799,28 @@ class TeacherCheckingTask(QMainWindow):
                 task_diff = row[0]
                 print(task_diff)
                 if task_diff == 'Легкий':
-                    for row in cursor.execute(f"SELECT easy_tasks, tasks_completed FROM student_stats WHERE login='{self.student_login}'"):
+                    for row in cursor.execute(
+                            f"SELECT easy_tasks, tasks_completed FROM student_stats WHERE login='{self.student_login}'"):
                         n = row[0]
                         n1 = row[1]
-                        cursor.execute(f"UPDATE student_stats SET easy_tasks={n + 1}, tasks_completed={n1 + 1} WHERE login='{self.student_login}'")
+                        cursor.execute(
+                            f"UPDATE student_stats SET easy_tasks={n + 1}, tasks_completed={n1 + 1} WHERE login='{self.student_login}'")
                         data_base.commit()
                 elif task_diff == 'Средний':
-                    for row in cursor.execute(f"SELECT medium_tasks, tasks_completed FROM student_stats WHERE login='{self.student_login}'"):
+                    for row in cursor.execute(
+                            f"SELECT medium_tasks, tasks_completed FROM student_stats WHERE login='{self.student_login}'"):
                         n = row[0]
                         n1 = row[1]
-                        cursor.execute(f"UPDATE student_stats SET medium_tasks={n + 1}, tasks_completed={n1 + 1} WHERE login='{self.student_login}'")
+                        cursor.execute(
+                            f"UPDATE student_stats SET medium_tasks={n + 1}, tasks_completed={n1 + 1} WHERE login='{self.student_login}'")
                         data_base.commit()
                 elif task_diff == 'Сложный':
-                    for row in cursor.execute(f"SELECT hard_tasks, tasks_completed FROM student_stats WHERE login='{self.student_login}'"):
+                    for row in cursor.execute(
+                            f"SELECT hard_tasks, tasks_completed FROM student_stats WHERE login='{self.student_login}'"):
                         n = row[0]
                         n1 = row[1]
-                        cursor.execute(f"UPDATE student_stats SET hard_tasks={n + 1}, tasks_completed={n1 + 1} WHERE login='{self.student_login}'")
+                        cursor.execute(
+                            f"UPDATE student_stats SET hard_tasks={n + 1}, tasks_completed={n1 + 1} WHERE login='{self.student_login}'")
                         data_base.commit()
                 else:
                     pass
@@ -815,6 +828,127 @@ class TeacherCheckingTask(QMainWindow):
             self.task_text.clear()
             self.choose_mark_label.setText('Выберите оценку...')
             self.close()
+
+
+class CompletedTasksListForm(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.look_task_form = LookTaskForm()
+        self.listWidget = QListWidget()
+        self.open_task_btn = QPushButton()
+        self.close_btn = QPushButton()
+        self.initUI()
+        self.close_btn.clicked.connect(self.on_close_btn)
+        self.open_task_btn.clicked.connect(self.on_open_task_btn)
+
+    def initUI(self):
+        uic.loadUi('ui_folder\\completed_tasks_list.ui', self)
+        self.setGeometry(300, 300, 300, 300)
+        self.setFixedSize(280, 345)
+
+    def initialization(self, login):
+        self.listWidget.clear()
+        self.login = login
+        for task in cursor.execute(
+                f"SELECT task_name, mark FROM student_{login} WHERE is_completed=1"):
+            self.listWidget.addItem(f'"{task[0]}" Оценка: {task[1]}')
+
+    def on_open_task_btn(self):
+        text = self.listWidget.currentItem().text()
+        task_name = text.split('"')[1].strip()
+        print(text.split('"'))
+        self.look_task_form.initialization(self.login, task_name)
+        self.look_task_form.show()
+
+    def on_close_btn(self):
+        self.listWidget.clear()
+        self.close()
+
+
+class LookTaskForm(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.task_name_label = QLabel()
+        self.label = QLabel()
+        self.task_text = QPlainTextEdit()
+        self.plainTextEdit = QPlainTextEdit()
+        self.download_file_btn = QPushButton()
+        self.diff_label = QLabel()
+        self.teacher_label = QLabel()
+        self.choose_file_btn = QPushButton()
+        self.close_btn = QPushButton()
+        self.mark_label = QLabel()
+        self.initUI()
+
+        # Подключение кнопок
+        self.download_file_btn.clicked.connect(self.on_download_file_btn)
+        self.choose_file_btn.clicked.connect(self.on_choose_file_btn)
+
+    def initUI(self):
+        uic.loadUi('ui_folder\\look_task_form.ui', self)
+        self.setGeometry(300, 300, 300, 300)
+        self.setFixedSize(570, 400)
+
+    def initialization(self, login, task_name):
+        try:
+            self.login = login
+            self.task_name = task_name
+            self.task_name_label.setText(f'Задание: "{self.task_name}"')
+
+            for row in cursor.execute(
+                    f"SELECT task_text, task_diff, teacher_login FROM tasks WHERE task_name='{self.task_name}'"):
+                self.text_chal = row[0]
+                self.task_text.setPlainText(self.text_chal)
+                self.task_diff = row[1]
+                self.teacher_login = row[2]
+                self.diff_label.setText(f'Уровень сложности: {self.task_diff}')
+
+            for row in cursor.execute(
+                    f"SELECT task_text, file_path, mark FROM student_{self.login} WHERE task_name='{self.task_name}'"):
+                self.solution_text = row[0]
+                self.solution_path = row[1]
+                self.plainTextEdit.setPlainText(self.solution_text)
+                self.mark = row[2]
+                self.mark_label.setText(f"Оценка: {str(self.mark)}")
+
+            for row in cursor.execute(f"SELECT name, surname FROM users WHERE login='{self.teacher_login}'"):
+                self.teacher_label.setText(f"Преподаватель: {row[0]} {row[1]}")
+
+        except Exception as Error:
+            print('initialization Error:', Error)
+
+    def on_close_btn(self):
+        self.close()
+
+    def on_download_file_btn(self):
+        try:
+            for row in cursor.execute(f"SELECT task_file FROM tasks WHERE task_name='{self.task_name}'"):
+                self.file_path = row[0]
+                if self.file_path == 'None':
+                    self.label.setText('К этому заданию не прилагается файла')
+                else:
+                    res = handler_file_path(self.file_path)[0]
+                    self.label.setText(res)
+                    path = '\\'.join((handler_file_path(self.file_path)[1])[0:-1])
+                    print(path)
+                    path = os.path.realpath(path)
+                    os.startfile(path)
+        except Exception as Error:
+            print(Error)
+
+    def on_choose_file_btn(self):
+        try:
+            if self.solution_path == 'None':
+                self.label.setText('Файла с решением не прилагалось')
+            else:
+                res = handler_file_path(self.solution_path)[0]
+                self.label.setText(res)
+                path = '\\'.join((handler_file_path(self.solution_path)[1])[0:-1])
+                print(path)
+                path = os.path.realpath(path)
+                os.startfile(path)
+        except Exception as Error:
+            print(Error)
 
 
 if __name__ == '__main__':
