@@ -5,8 +5,6 @@ import sqlite3
 from reg_func import *
 import time
 import os
-import student_classes
-import teacher_classes
 
 # Подключение к базе данных
 data_base = sqlite3.connect('data_base.db', timeout=10)
